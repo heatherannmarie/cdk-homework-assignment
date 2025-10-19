@@ -11,7 +11,7 @@ class ServerStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, vpc: ec2.Vpc, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # Create security group for web servers
+        # security group
         web_server_sg = ec2.SecurityGroup(
             self,
             "WebServerSecurityGroup",
@@ -20,14 +20,14 @@ class ServerStack(Stack):
             allow_all_outbound=True
         )
 
-        # Allow HTTP traffic from anywhere to web servers
+        # inbound traffic rule
         web_server_sg.add_ingress_rule(
             ec2.Peer.any_ipv4(),
             ec2.Port.tcp(80),
             "Allow HTTP traffic from anywhere"
         )
 
-        # Create IAM role for EC2 instances (for SSM access)
+        # iam role
         instance_role = iam.Role(
             self,
             "WebServerRole",
@@ -37,7 +37,7 @@ class ServerStack(Stack):
             iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSSMManagedInstanceCore")
         )
 
-        # User data script to install Apache
+        # apache install script
         user_data = ec2.UserData.for_linux()
         user_data.add_commands(
             "#!/bin/bash",
@@ -48,10 +48,10 @@ class ServerStack(Stack):
             "echo '<html><h1>Web Server in AZ: $(ec2-metadata --availability-zone | cut -d \" \" -f 2)</h1></html>' > /var/www/html/index.html"
         )
 
-        # Get public subnets (one in each AZ)
+        # public subnets
         public_subnets = vpc.select_subnets(subnet_type=ec2.SubnetType.PUBLIC).subnets
 
-        # Launch web server 1 in first public subnet (AZ 1)
+        # public webserver 1 in one subnet
         web_server_1 = ec2.Instance(
             self,
             "WebServer1",
@@ -66,7 +66,7 @@ class ServerStack(Stack):
             user_data=user_data
         )
 
-        # Launch web server 2 in second public subnet (AZ 2)
+        # public webserver 2 in second subnet
         web_server_2 = ec2.Instance(
             self,
             "WebServer2",
